@@ -1,8 +1,10 @@
 import { useAuthStore } from '../auth-store';
-import { refreshSession } from './refresh-session';
+import { refreshSession } from './auth-coordinator';
 
 /**
- * 依 sessionStorage 的 refresh token 恢復工作階段；沒有則標為未登入。
+ * App 啟動時依 sessionStorage 保存的資料恢復工作階段。
+ * 已登入或正在恢復時不重複執行；沒有 savedSession 則直接標成未登入。
+ * Refresh 的成功、暫時失敗與 session 失效狀態都由 refreshSession 統一寫入 store。
  */
 export async function bootstrapSession(): Promise<void> {
   const { session, savedSession } = useAuthStore.getState();

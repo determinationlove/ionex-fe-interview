@@ -1,5 +1,5 @@
 import type { AxiosInstance, AxiosResponse } from 'axios';
-import { appClient, publicClient } from './clients';
+import { publicClient } from './clients';
 import { beginRequest, endRequest } from './pending-requests';
 
 let attached = false;
@@ -29,13 +29,13 @@ function attachToClient(client: AxiosInstance): void {
 }
 
 /**
- * 為所有 API client 追蹤進行中請求。只應呼叫一次，且須在 auth interceptor 之後掛上。
+ * 為 publicClient 追蹤進行中請求（登入／refresh）。只應呼叫一次。
+ * 受保護請求改由 Query 狀態呈現，避免切頁被全螢幕遮罩蓋住。
  */
 export function attachPendingInterceptors(): void {
   if (attached) {
     return;
   }
   attached = true;
-  attachToClient(appClient);
   attachToClient(publicClient);
 }

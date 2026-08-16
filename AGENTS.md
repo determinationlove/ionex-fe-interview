@@ -1,10 +1,13 @@
 # Ionex Frontend Interview Agent Guide
 
-Codex、Cursor 等 agent 共用此唯一契約，不假設特定工具。專屬設定只指向本檔、不複製；目前不建 adapter、nested AGENTS、skills、prompt library。執行順序見[三日交付計畫](docs/three-day-delivery-plan.md)；產品／API／版本／實作歸各權威來源。
+本檔是 Codex、Cursor 等 agent 共用的實作與協作契約，不假設特定工具。產品導覽與啟動方式見
+[README](README.md)；Auth 架構取捨見
+[ADR 0001](docs/adr/0001-single-tab-refresh-cross-tab-logout.md)。專屬設定只指向本檔、不複製，
+目前不建 adapter、nested AGENTS、skills 或 prompt library。
 
 ## 目標與範圍
 
-- 三日範圍：登入、session 恢復、users 篩選／分頁、登出、RWD；禁自創排序、CRUD、`/me`、其他 API；擴充先問。
+- 作業範圍：登入、session 恢復、users 篩選／分頁、登出、RWD；禁自創排序、CRUD、`/me`、其他 API；擴充先問。
 
 ## 權威來源與工作契約
 
@@ -34,10 +37,10 @@ Codex、Cursor 等 agent 共用此唯一契約，不假設特定工具。專屬�
 - Auth union（含 payload）：`IDLE | LOADING | AUTHENTICATED | UNAUTHENTICATED | ERROR`。
 - Interceptor 每次用 `useAuthStore.getState()` 取 token，只管 transport；refresh 交 coordinator。
 - 僅 `401 + TOKEN_EXPIRED` refresh；分頁內 single-flight；最多 replay 一次；refresh client 無 protected interceptor。
-- Web Locks 選唯一 refresher；`ionex.auth.v1` 只傳 runtime-validated `TOKEN_REQUEST`、`TOKEN_UPDATED`、`SESSION_ENDED`。
-- Access token 僅同 session 存活分頁記憶體同步，不持久化／記錄；refresh token 不廣播。缺跨頁 API 則退回單分頁。
+- Refresh 僅在本分頁執行；不使用 Web Locks、不選舉跨分頁 refresher、不跨分頁同步 access token。
+- `ionex.auth.v1` 只傳 runtime-validated `SESSION_ENDED`；access token 僅本分頁記憶體，不持久化／廣播／記錄。
 - 現行 refresh response 未提供 rotated refresh token；不得宣稱完整 rotation-safe。
-- Logout：invalidate generation → abort refresh／lock wait → clear memory／storage／query cache → reject queue → broadcast；依 [Axios cancellation](https://axios-http.com/docs/cancellation) 實作。舊結果不得恢復 session。
+- Logout：invalidate 本分頁 generation → abort refresh → clear memory／storage／query cache → 阻止 replay → 廣播 `SESSION_ENDED`；依 [Axios cancellation](https://axios-http.com/docs/cancellation) 實作。本分頁舊結果不得恢復 session。
 - Refresh 成功靜默；暫時失敗顯示全域重試；fatal failure 終止 session、導回登入。
 - 禁讀、輸出、記錄或提交 secret、`.env`、token、Authorization header、auth snapshot。
 
@@ -47,5 +50,5 @@ Codex、Cursor 等 agent 共用此唯一契約，不假設特定工具。專屬�
 - 範圍內可改／驗證；新 dependency 先問。Commit、push、deploy／rollback、DNS、secret、repo settings、branch protection、破壞性 Git 均需當次授權。
 - Review 為 read-only P0–P3，附檔案／行號、影響、修正方向；Auth／API 後與 release 前執行。禁刪除、skip、弱化 gate。
 - 僅當前 tree 實跑成功可標 PASS；否則 FAIL／NOT RUN。Handoff 列變更、命令／結果、未驗證、風險。
-- 初期無 Vitest、MSW、Playwright。Scaffold 後 `npm run verify` 僅含 format、ESLint、TypeScript、production build。
-- 人工：登入、reload、300 秒過期、雙分頁 refresh、logout-abort race、filters／pagination、desktop、390px。README 分列人工／未自動驗證；不得稱 race 經自動測試證明。
+- 本專案目前不加入 Vitest、MSW、Playwright；`npm run verify` 僅含 format、ESLint、TypeScript、production build。
+- 人工：登入、reload、300 秒過期（單分頁 refresh／replay）、同 session 跨分頁 logout、同分頁 logout-abort race、filters／pagination、desktop、390px。README 分列人工／未自動驗證；不得稱 race 經自動測試證明。
