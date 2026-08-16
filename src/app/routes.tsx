@@ -5,12 +5,15 @@ import { ProtectedRoute } from '@/features/auth/ProtectedRoute';
 import { NotFoundPage } from '@/features/not-found/NotFoundPage';
 import { UsersPage } from '@/features/users/UsersPage';
 
+// Vite 的 BASE_URL 會依部署位置改變；Router basename 不需要尾斜線。
+const routerBasename = import.meta.env.BASE_URL.replace(/\/$/, '') || '/';
+
 /**
  * 應用程式路由表。
  */
 export function AppRoutes(): ReactElement {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={routerBasename}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route element={<ProtectedRoute />}>
