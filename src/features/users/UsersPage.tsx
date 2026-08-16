@@ -45,6 +45,10 @@ function limitSelectOptions(current: number): number[] {
   return [...LIMIT_OPTIONS, current].sort((left: number, right: number) => left - right);
 }
 
+function getUserRowId(user: User): string {
+  return String(user.id);
+}
+
 function UserAvatar({ name, src }: { name: string; src: string }): ReactElement {
   const [failed, setFailed] = useState(false);
   const showPlaceholder = src.length === 0 || failed;
@@ -263,9 +267,41 @@ export function UsersPage(): ReactElement {
   const query = useUsersQuery(params);
   const users = query.data?.users ?? [];
   const pagination = query.data?.pagination;
+
+  useEffect(() => {
+    if (pagination === undefined || query.isPlaceholderData || query.error !== null) {
+      return;
+    }
+    const lastPage = Math.max(pagination.totalPages, DEFAULT_PAGE);
+    if (params.page <= lastPage) {
+      return;
+    }
+    setSearchParams(
+      serializeUsersSearchParams({
+        page: lastPage,
+        limit: params.limit,
+        name: params.name,
+        email: params.email,
+        status: params.status,
+      }),
+      { replace: true },
+    );
+  }, [
+    pagination,
+    params.email,
+    params.limit,
+    params.name,
+    params.page,
+    params.status,
+    query.error,
+    query.isPlaceholderData,
+    setSearchParams,
+  ]);
+
   const table = useReactTable({
     data: users,
     columns,
+    getRowId: getUserRowId,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     pageCount: pagination?.totalPages ?? 0,
@@ -338,8 +374,11 @@ export function UsersPage(): ReactElement {
     <section className="flex min-w-0 flex-1 flex-col gap-4 p-4">
       <div className="flex min-w-0 items-center justify-between gap-3">
         <h1 className="text-lg font-semibold">使用者列表</h1>
-        {query.isFetching && query.isPlaceholderData ? (
-          <span className="loading loading-spinner" aria-label="更新中" />
+        {query.isFetching && !showInitialLoading ? (
+          <span className="inline-flex items-center gap-2 text-sm" role="status">
+            <span className="loading loading-sm loading-spinner" aria-hidden="true" />
+            更新中
+          </span>
         ) : null}
       </div>
 

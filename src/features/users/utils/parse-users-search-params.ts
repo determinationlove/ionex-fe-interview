@@ -12,8 +12,12 @@ function parsePositiveInt(value: string | null, fallback: number): number {
   if (value === null || value.trim() === '') {
     return fallback;
   }
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || parsed < 1) {
+  const normalized = value.trim();
+  if (!/^\d+$/.test(normalized)) {
+    return fallback;
+  }
+  const parsed = Number(normalized);
+  if (!Number.isSafeInteger(parsed) || parsed < 1) {
     return fallback;
   }
   return parsed;

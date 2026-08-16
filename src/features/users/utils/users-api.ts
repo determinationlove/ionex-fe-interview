@@ -89,8 +89,12 @@ function mapUsersResponse(data: UsersApiResponse): UsersResult {
 /**
  * 以已驗證的查詢條件向 `/api/users` 取得資料。
  * 未指定的 filter 不放進 query string；response 通過 runtime guard 後才映射成前端 model。
+ * signal 讓 TanStack Query 在 logout 或 query 被清除時取消底層 Axios request。
  */
-export async function fetchUsers(params: UsersQueryParams): Promise<UsersResult> {
+export async function fetchUsers(
+  params: UsersQueryParams,
+  signal: AbortSignal,
+): Promise<UsersResult> {
   const query: Record<string, string | number> = {
     page: params.page,
     limit: params.limit,
@@ -106,7 +110,7 @@ export async function fetchUsers(params: UsersQueryParams): Promise<UsersResult>
   }
 
   try {
-    const { data } = await appClient.get<unknown>('/api/users', { params: query });
+    const { data } = await appClient.get<unknown>('/api/users', { params: query, signal });
     if (!isUsersResponse(data)) {
       throw new AppError('使用者列表回應格式不正確');
     }
